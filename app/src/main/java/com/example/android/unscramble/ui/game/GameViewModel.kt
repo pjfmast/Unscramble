@@ -59,6 +59,8 @@ class GameViewModel : ViewModel() {
     private lateinit var currentWord: String
 
     init {
+        Log.d("GameFragment", "init: GameViewModel created")
+
         getNextWord()
     }
 
@@ -120,5 +122,10 @@ class GameViewModel : ViewModel() {
             getNextWord()
             true
         } else false
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        Log.d("GameFragment", "onCleared: GameViewModel destroyed")
     }
 }

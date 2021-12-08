@@ -16,7 +16,9 @@
 
 package com.example.android.unscramble.ui.game
 
+import android.content.Context
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -26,8 +28,11 @@ import androidx.fragment.app.viewModels
 import com.example.android.unscramble.R
 import com.example.android.unscramble.databinding.GameFragmentBinding
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import java.time.LocalDateTime
 
-/**
+const val TAG = "GameFragment"
+
+    /**
  * Fragment where the game is played, contains the game logic.
  */
 class GameFragment : Fragment() {
@@ -38,15 +43,22 @@ class GameFragment : Fragment() {
     // Create a ViewModel the first time the fragment is created.
     // If the fragment is re-created, it receives the same GameViewModel instance created by the
     // first fragment.
+    // delegate get() for ViewModel, the same ViewModel is returned on each creation of the GameFragment
     private val viewModel: GameViewModel by viewModels()
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
+        Log.d("GameFragment", "GameFragment created/re-created!")
         // Inflate the layout XML file and return a binding object instance
         binding = DataBindingUtil.inflate(inflater, R.layout.game_fragment, container, false)
         return binding.root
+    }
+
+    override fun onDetach() {
+        super.onDetach()
+        Log.d("GameFragment", "GameFragment destroyed!")
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -59,6 +71,12 @@ class GameFragment : Fragment() {
         // Specify the fragment view as the lifecycle owner of the binding.
         // This is used so that the binding can observe LiveData updates
         binding.lifecycleOwner = viewLifecycleOwner
+
+        // manier 1 om een LiveData property te abserven:
+//        viewModel.score.observe(viewLifecycleOwner,
+//            { newScore ->
+//                binding.score.text = getString(R.string.score, newScore)
+//            })
 
         // Setup a click listener for the Submit and Skip buttons.
         binding.submit.setOnClickListener { onSubmitWord() }
@@ -100,17 +118,43 @@ class GameFragment : Fragment() {
      * Creates and shows an AlertDialog with final score.
      */
     private fun showFinalScoreDialog() {
+        val oldHighScore = getHighScore()
+        val newScore = viewModel.score.value ?: 0
+        val title =
+            if (oldHighScore >= newScore)
+                (getString(R.string.congratulations))
+            else (getString(R.string.new_high_score, oldHighScore, newScore))
+
         MaterialAlertDialogBuilder(requireContext())
-                .setTitle(getString(R.string.congratulations))
-                .setMessage(getString(R.string.you_scored, viewModel.score.value))
-                .setCancelable(false)
-                .setNegativeButton(getString(R.string.exit)) { _, _ ->
-                    exitGame()
-                }
-                .setPositiveButton(getString(R.string.play_again)) { _, _ ->
-                    restartGame()
-                }
-                .show()
+            .setTitle(title)
+            .setMessage(getString(R.string.you_scored, newScore))
+            .setCancelable(false)
+            .setNegativeButton(getString(R.string.exit)) { _, _ ->
+                exitGame()
+            }
+            .setPositiveButton(getString(R.string.play_again)) { _, _ ->
+                restartGame()
+            }
+            .show()
+
+        updateHighScore()
+    }
+
+    private fun getHighScore(): Int {
+        val sharedPreferences = activity?.getPreferences(Context.MODE_PRIVATE) ?: return 0
+        Log.d(TAG, "getHighScore(): stored preferences " + sharedPreferences.all)
+        return sharedPreferences.getInt(getString(R.string.saved_high_score_value), 0)
+    }
+
+    private fun updateHighScore() {
+        val sharedPreferences = activity?.getPreferences(Context.MODE_PRIVATE) ?: return
+
+        with(sharedPreferences.edit()) {
+            val newHighScore = viewModel.score.value ?: 0
+            putInt(getString(R.string.saved_high_score_value), newHighScore)
+            putString(getString(R.string.saved_high_score_date), LocalDateTime.now().toString())
+            apply()
+        }
     }
 
     /*
