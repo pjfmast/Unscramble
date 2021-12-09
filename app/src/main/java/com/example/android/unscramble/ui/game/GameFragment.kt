@@ -32,7 +32,7 @@ import java.time.LocalDateTime
 
 const val TAG = "GameFragment"
 
-    /**
+/**
  * Fragment where the game is played, contains the game logic.
  */
 class GameFragment : Fragment() {
@@ -118,12 +118,8 @@ class GameFragment : Fragment() {
      * Creates and shows an AlertDialog with final score.
      */
     private fun showFinalScoreDialog() {
-        val oldHighScore = getHighScore()
         val newScore = viewModel.score.value ?: 0
-        val title =
-            if (oldHighScore >= newScore)
-                (getString(R.string.congratulations))
-            else (getString(R.string.new_high_score, oldHighScore, newScore))
+        val title = getString(R.string.congratulations)
 
         MaterialAlertDialogBuilder(requireContext())
             .setTitle(title)
@@ -136,26 +132,8 @@ class GameFragment : Fragment() {
                 restartGame()
             }
             .show()
-
-        updateHighScore()
     }
 
-    private fun getHighScore(): Int {
-        val sharedPreferences = activity?.getPreferences(Context.MODE_PRIVATE) ?: return 0
-        Log.d(TAG, "getHighScore(): stored preferences " + sharedPreferences.all)
-        return sharedPreferences.getInt(getString(R.string.saved_high_score_value), 0)
-    }
-
-    private fun updateHighScore() {
-        val sharedPreferences = activity?.getPreferences(Context.MODE_PRIVATE) ?: return
-
-        with(sharedPreferences.edit()) {
-            val newHighScore = viewModel.score.value ?: 0
-            putInt(getString(R.string.saved_high_score_value), newHighScore)
-            putString(getString(R.string.saved_high_score_date), LocalDateTime.now().toString())
-            apply()
-        }
-    }
 
     /*
      * Re-initializes the data in the ViewModel and updates the views with the new data, to
