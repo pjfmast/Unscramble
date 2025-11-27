@@ -59,9 +59,31 @@ import com.example.unscramble.ui.theme.UnscrambleTheme
 @Composable
 fun GameScreen(
     gameViewModel: GameViewModel = viewModel(),
-        onExit: () -> Unit = {}
+    onExit: () -> Unit = {}
 ) {
     val gameUiState by gameViewModel.uiState.collectAsStateWithLifecycle()
+    
+    GameScreen(
+        gameUiState = gameUiState,
+        userGuess = gameViewModel.userGuess,
+        onUserGuessChanged = { gameViewModel.updateUserGuess(it) },
+        onCheckUserGuess = { gameViewModel.checkUserGuess() },
+        onSkipWord = { gameViewModel.skipWord() },
+        onResetGame = { gameViewModel.resetGame() },
+        onExit = onExit
+    )
+}
+
+@Composable
+private fun GameScreen(
+    gameUiState: GameUiState,
+    userGuess: String,
+    onUserGuessChanged: (String) -> Unit,
+    onCheckUserGuess: () -> Unit,
+    onSkipWord: () -> Unit,
+    onResetGame: () -> Unit,
+    onExit: () -> Unit
+) {
     val mediumPadding = dimensionResource(R.dimen.padding_medium)
 
     Column(
@@ -79,10 +101,10 @@ fun GameScreen(
             style = typography.titleLarge,
         )
         GameLayout(
-            onUserGuessChanged = { gameViewModel.updateUserGuess(it) },
+            onUserGuessChanged = onUserGuessChanged,
             wordCount = gameUiState.currentWordCount,
-            userGuess = gameViewModel.userGuess,
-            onKeyboardDone = { gameViewModel.checkUserGuess() },
+            userGuess = userGuess,
+            onKeyboardDone = onCheckUserGuess,
             currentScrambledWord = gameUiState.currentScrambledWord,
             isGuessWrong = gameUiState.isGuessedWordWrong,
             modifier = Modifier
@@ -100,7 +122,7 @@ fun GameScreen(
 
             Button(
                 modifier = Modifier.fillMaxWidth(),
-                onClick = { gameViewModel.checkUserGuess() }
+                onClick = onCheckUserGuess
             ) {
                 Text(
                     text = stringResource(R.string.submit),
@@ -109,7 +131,7 @@ fun GameScreen(
             }
 
             OutlinedButton(
-                onClick = { gameViewModel.skipWord() },
+                onClick = onSkipWord,
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text(
@@ -124,8 +146,8 @@ fun GameScreen(
         if (gameUiState.isGameOver) {
             FinalScoreDialog(
                 score = gameUiState.score,
-                onPlayAgain = { gameViewModel.resetGame() },
-                onExit = { onExit() }
+                onPlayAgain = onResetGame,
+                onExit = onExit
             )
         }
     }
